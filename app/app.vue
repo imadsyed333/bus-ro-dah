@@ -5,9 +5,11 @@
 <script setup>
 import 'leaflet/dist/leaflet.css'
 import { offset } from '~/utils/deadReckon'
+import { indexCentreline, snap } from '~/utils/snapToLine'
 
 const mapEl = ref(null)
 const fleet = new Map()
+let snapIndex = null
 
 function occupancyLabel(raw) {
   if (!raw) return 'Unknown'
@@ -16,6 +18,14 @@ function occupancyLabel(raw) {
 
 function tooltipHtml(bus) {
   return `Route ${bus.routeId || '—'}<br>${(bus.speed * 3.6).toFixed(1)} km/h<br>${occupancyLabel(bus.occupancy)}`
+}
+
+function snapBus(bus) {
+  if (!snapIndex) return
+  const s = snap(snapIndex, bus.lat, bus.lon, bus.bearing)
+  bus.lat = s.lat
+  bus.lon = s.lon
+  bus.bearing = s.bearing
 }
 
 function applySnapshot(L, map, incoming) {
@@ -30,13 +40,16 @@ function applySnapshot(L, map, incoming) {
       rec.speed = v.speed
       rec.routeId = v.routeId
       rec.occupancy = v.occupancy
-      rec.marker.setLatLng([v.lat, v.lon])
+      snapBus(rec)
+      rec.marker.setLatLng([rec.lat, rec.lon])
       rec.marker.setTooltipContent(tooltipHtml(v))
     } else {
-      const marker = L.circleMarker([v.lat, v.lon], { radius: 6 })
+      const bus = { ...v }
+      snapBus(bus)
+      const marker = L.circleMarker([bus.lat, bus.lon], { radius: 6 })
         .bindTooltip(tooltipHtml(v))
         .addTo(map)
-      fleet.set(v.id, { ...v, marker })
+      fleet.set(v.id, { ...bus, marker })
     }
   }
   for (const [id, rec] of fleet) {
@@ -55,8 +68,10 @@ onMounted(async () => {
   map = L.map(mapEl.value, { preferCanvas: true }).setView([43.6532, -79.3832], 12)
   L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'Esri, OpenStreetMap, and the GIS user community' },
+    { attribution: 'Esri, OpenStreetMap, GIS user community | Centreline © City of Toronto (OGL-Toronto)' },
   ).addTo(map)
+  map.createPane('centreline')
+  map.getPane('centreline').style.zIndex = 250
 
   async function load() {
     try {
@@ -67,7 +82,26 @@ onMounted(async () => {
     }
   }
 
+  async function loadCentreline() {
+    try {
+      const roads = await $fetch('/api/centreline', { timeout: 300_000 })
+      L.geoJSON(roads, {
+        pane: 'centreline',
+        style: { color: '#4a6fa5', weight: 1, opacity: 0.55 },
+        renderer: L.canvas({ pane: 'centreline' }),
+      }).addTo(map)
+      snapIndex = indexCentreline(roads)
+      for (const bus of fleet.values()) {
+        snapBus(bus)
+        bus.marker.setLatLng([bus.lat, bus.lon])
+      }
+    } catch {
+      // keep free-plane motion until centreline is available
+    }
+  }
+
   await load()
+  loadCentreline()
   poll = setInterval(load, 60_000)
   let last = performance.now()
   move = setInterval(() => {
@@ -79,7 +113,8 @@ onMounted(async () => {
       const next = offset(bus.lat, bus.lon, bus.bearing, bus.speed * dt)
       bus.lat = next.lat
       bus.lon = next.lon
-      bus.marker.setLatLng([next.lat, next.lon])
+      snapBus(bus)
+      bus.marker.setLatLng([bus.lat, bus.lon])
     }
   }, 100)
 })

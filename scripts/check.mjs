@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { parseGtfsRtDebug } from '../server/utils/parseGtfsRtDebug.ts'
 import { offset } from '../app/utils/deadReckon.ts'
+import { indexCentreline, snap } from '../app/utils/snapToLine.ts'
 
 const sample = `
 header {
@@ -49,5 +50,20 @@ assert.deepEqual(vehicles[0], {
 const north = offset(43, -79, 0, 111.32)
 assert.ok(Math.abs(north.lat - 43.001) < 1e-12, `lat ${north.lat}`)
 assert.ok(Math.abs(north.lon - -79) < 1e-12, `lon ${north.lon}`)
+
+const roads = {
+  type: 'FeatureCollection',
+  features: [{
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates: [[-79, 43], [-79, 43.001]] },
+  }],
+}
+const idx = indexCentreline(roads)
+const on = snap(idx, 43.0005, -79.0003, 0)
+assert.ok(Math.abs(on.lon - -79) < 1e-6, `snap lon ${on.lon}`)
+assert.ok(Math.abs(on.lat - 43.0005) < 1e-6, `snap lat ${on.lat}`)
+const far = snap(idx, 43.5, -79.5, 0)
+assert.equal(far.lat, 43.5)
+assert.equal(far.lon, -79.5)
 
 console.log('ok')
