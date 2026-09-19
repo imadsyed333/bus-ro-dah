@@ -208,7 +208,9 @@ function pinIcon(L, bus) {
 }
 
 function selectBus(bus) {
+  const switched = selected.value?.id !== bus.id
   selected.value = { id: bus.id, routeId: bus.routeId, speed: bus.speed, occupancy: bus.occupancy }
+  if (switched && map) map.setView([bus.lat, bus.lon], Math.max(map.getZoom(), 16))
 }
 
 function snapBus(bus) {
@@ -335,6 +337,7 @@ onMounted(async () => {
         continue
       }
       bus.marker.setLatLng([bus.lat, bus.lon])
+      if (selected.value?.id === bus.id) map.panTo([bus.lat, bus.lon], { animate: false })
     }
   }, 100)
 })
