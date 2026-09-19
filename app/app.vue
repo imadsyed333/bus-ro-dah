@@ -93,6 +93,7 @@ function occupancyColor(raw) {
 
 const occupancyOpts = [
   { id: 'available', label: 'Available', color: occupancyColor('EMPTY') },
+  { id: 'few', label: 'Few seats', color: occupancyColor('FEW_SEATS_AVAILABLE') },
   { id: 'crowded', label: 'Crowded', color: occupancyColor('STANDING_ROOM_ONLY') },
   { id: 'full', label: 'Full', color: occupancyColor('FULL') },
 ]
@@ -107,8 +108,9 @@ function occupancyBucket(raw) {
   switch (raw) {
     case 'EMPTY':
     case 'MANY_SEATS_AVAILABLE':
-    case 'FEW_SEATS_AVAILABLE':
       return 'available'
+    case 'FEW_SEATS_AVAILABLE':
+      return 'few'
     case 'STANDING_ROOM_ONLY':
     case 'CRUSHED_STANDING_ROOM_ONLY':
       return 'crowded'
