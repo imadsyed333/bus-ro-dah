@@ -134,8 +134,8 @@ onMounted(async () => {
   const L = leaflet.default ?? leaflet
   map = L.map(mapEl.value, { preferCanvas: true }).setView([43.6532, -79.3832], 12)
   L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    { attribution: '&copy; OpenStreetMap &copy; CARTO | Centreline &copy; City of Toronto (OGL-Toronto)' },
+    'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    { attribution: '&copy; OpenStreetMap, Tiles style by Humanitarian OpenStreetMap Team hosted by OSM France | Centreline &copy; City of Toronto (OGL-Toronto)' },
   ).addTo(map)
   map.on('click', (e) => {
     if (e.originalEvent?.target?.closest?.('.bus-pin, .card')) return
