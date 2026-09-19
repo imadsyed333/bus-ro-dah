@@ -23,6 +23,23 @@
           <button type="button" :aria-label="`Remove route ${id}`" @click="removeRoute(id)">×</button>
         </span>
       </div>
+      <div class="filters">
+        <fieldset>
+          <legend>Occupancy</legend>
+          <label v-for="opt in occupancyOpts" :key="opt.id">
+            <input type="checkbox" :value="opt.id" v-model="selectedOccupancy">
+            <i :style="{ background: opt.color }" />
+            {{ opt.label }}
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Status</legend>
+          <label v-for="opt in motionOpts" :key="opt.id">
+            <input type="checkbox" :value="opt.id" v-model="selectedMotion">
+            {{ opt.label }}
+          </label>
+        </fieldset>
+      </div>
     </div>
     <aside v-if="selected" class="card" :style="{ '--accent': occupancyColor(selected.occupancy) }">
       <button class="card-close" type="button" aria-label="Close" @click="selected = null">×</button>
@@ -54,12 +71,63 @@ const mapEl = ref(null)
 const selected = ref(null)
 const query = ref('')
 const selectedRoutes = ref([])
+const selectedOccupancy = ref([])
+const selectedMotion = ref([])
 const knownRoutes = ref([])
+function occupancyColor(raw) {
+  switch (raw) {
+    case 'EMPTY':
+    case 'MANY_SEATS_AVAILABLE':
+      return '#2f9e44'
+    case 'FEW_SEATS_AVAILABLE':
+      return '#f08c00'
+    case 'STANDING_ROOM_ONLY':
+    case 'CRUSHED_STANDING_ROOM_ONLY':
+      return '#e8590c'
+    case 'FULL':
+      return '#e03131'
+    default:
+      return '#495057'
+  }
+}
+
+const occupancyOpts = [
+  { id: 'available', label: 'Available', color: occupancyColor('EMPTY') },
+  { id: 'crowded', label: 'Crowded', color: occupancyColor('STANDING_ROOM_ONLY') },
+  { id: 'full', label: 'Full', color: occupancyColor('FULL') },
+]
+const motionOpts = [
+  { id: 'moving', label: 'Moving' },
+  { id: 'stopped', label: 'Stopped' },
+]
 const fleet = new Map()
 let snapIndex = null
 
+function occupancyBucket(raw) {
+  switch (raw) {
+    case 'EMPTY':
+    case 'MANY_SEATS_AVAILABLE':
+    case 'FEW_SEATS_AVAILABLE':
+      return 'available'
+    case 'STANDING_ROOM_ONLY':
+    case 'CRUSHED_STANDING_ROOM_ONLY':
+      return 'crowded'
+    case 'FULL':
+      return 'full'
+    default:
+      return ''
+  }
+}
+
 function matchesFilter(bus) {
-  return selectedRoutes.value.length === 0 || selectedRoutes.value.includes(bus.routeId)
+  if (selectedRoutes.value.length && !selectedRoutes.value.includes(bus.routeId)) return false
+  if (selectedOccupancy.value.length && !selectedOccupancy.value.includes(occupancyBucket(bus.occupancy))) return false
+  if (selectedMotion.value.length) {
+    const moving = bus.speed > 0
+    if (moving && !selectedMotion.value.includes('moving')) return false
+    if (!moving && !selectedMotion.value.includes('stopped')) return false
+  }
+  return true
 }
 
 function syncFilter() {
@@ -117,28 +185,11 @@ function removeRoute(id) {
   if (refit) fitSelection()
 }
 
-watch(selectedRoutes, syncFilter)
+watch([selectedRoutes, selectedOccupancy, selectedMotion], syncFilter, { deep: true })
 
 function occupancyLabel(raw) {
   if (!raw) return 'Unknown'
   return raw.toLowerCase().split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
-}
-
-function occupancyColor(raw) {
-  switch (raw) {
-    case 'EMPTY':
-    case 'MANY_SEATS_AVAILABLE':
-      return '#2f9e44'
-    case 'FEW_SEATS_AVAILABLE':
-      return '#f08c00'
-    case 'STANDING_ROOM_ONLY':
-      return '#e8590c'
-    case 'CRUSHED_STANDING_ROOM_ONLY':
-    case 'FULL':
-      return '#e03131'
-    default:
-      return '#495057'
-  }
 }
 
 function esc(s) {
@@ -317,6 +368,43 @@ body,
   max-width: calc(100% - 68px);
   font-family: system-ui, sans-serif;
 }
+.filters {
+  display: flex;
+  gap: 16px;
+  flex-basis: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+}
+.filters fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.filters legend {
+  padding: 0 0 6px;
+  font: 700 11px/1 system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #868e96;
+}
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font: 600 13px/1.2 system-ui, sans-serif;
+  color: #1a1d21;
+  cursor: pointer;
+}
+.filters i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 .search {
   position: relative;
 }
@@ -488,11 +576,11 @@ body,
   font-size: 12px;
   font-weight: 600;
 }
-.chip-move {
+.chip.chip-move {
   background: #d3f9d8;
   color: #2b8a3e;
 }
-.chip-stop {
+.chip.chip-stop {
   background: #fff3bf;
   color: #e67700;
 }
