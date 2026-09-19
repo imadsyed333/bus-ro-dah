@@ -1,6 +1,29 @@
 <template>
   <div class="wrap">
     <div ref="mapEl" class="map" />
+    <div class="toolbar">
+      <div class="search">
+        <input
+          v-model="query"
+          type="search"
+          placeholder="Search route"
+          aria-label="Search route"
+          autocomplete="off"
+          @keydown.enter.prevent="addExact"
+        >
+        <ul v-if="query.trim() && suggestions.length" class="suggest">
+          <li v-for="id in suggestions" :key="id">
+            <button type="button" @click="addRoute(id)">{{ id }}</button>
+          </li>
+        </ul>
+      </div>
+      <div v-if="selectedRoutes.length" class="pills">
+        <span v-for="id in selectedRoutes" :key="id" class="route-pill">
+          {{ id }}
+          <button type="button" :aria-label="`Remove route ${id}`" @click="removeRoute(id)">×</button>
+        </span>
+      </div>
+    </div>
     <aside v-if="selected" class="card" :style="{ '--accent': occupancyColor(selected.occupancy) }">
       <button class="card-close" type="button" aria-label="Close" @click="selected = null">×</button>
       <header class="card-head">
@@ -29,8 +52,72 @@ const BUS_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="tr
 
 const mapEl = ref(null)
 const selected = ref(null)
+const query = ref('')
+const selectedRoutes = ref([])
+const knownRoutes = ref([])
 const fleet = new Map()
 let snapIndex = null
+
+function matchesFilter(bus) {
+  return selectedRoutes.value.length === 0 || selectedRoutes.value.includes(bus.routeId)
+}
+
+function syncFilter() {
+  if (!map) return
+  for (const bus of fleet.values()) {
+    const on = matchesFilter(bus)
+    const shown = map.hasLayer(bus.marker)
+    if (on && !shown) bus.marker.addTo(map)
+    else if (!on && shown) bus.marker.remove()
+  }
+  if (selected.value && !matchesFilter(selected.value)) selected.value = null
+}
+
+function refreshRoutes() {
+  const ids = new Set()
+  for (const bus of fleet.values()) {
+    if (bus.routeId) ids.add(bus.routeId)
+  }
+  knownRoutes.value = [...ids].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+}
+
+const suggestions = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return []
+  return knownRoutes.value.filter(id => id.toLowerCase().startsWith(q) && !selectedRoutes.value.includes(id))
+})
+
+function fitSelection() {
+  if (!map || !selectedRoutes.value.length) return
+  const pts = []
+  for (const bus of fleet.values()) {
+    if (matchesFilter(bus)) pts.push([bus.lat, bus.lon])
+  }
+  if (!pts.length) return
+  if (pts.length === 1) map.setView(pts[0], 14)
+  else map.fitBounds(pts, { padding: [48, 48], maxZoom: 15 })
+}
+
+function addRoute(id) {
+  if (!id || selectedRoutes.value.includes(id)) return
+  selectedRoutes.value = [...selectedRoutes.value, id]
+  query.value = ''
+  fitSelection()
+}
+
+function addExact() {
+  const q = query.value.trim().toLowerCase()
+  const exact = suggestions.value.find(id => id.toLowerCase() === q)
+  if (exact) addRoute(exact)
+}
+
+function removeRoute(id) {
+  const refit = selectedRoutes.value.length > 2
+  selectedRoutes.value = selectedRoutes.value.filter(r => r !== id)
+  if (refit) fitSelection()
+}
+
+watch(selectedRoutes, syncFilter)
 
 function occupancyLabel(raw) {
   if (!raw) return 'Unknown'
@@ -109,12 +196,12 @@ function applySnapshot(L, map, incoming) {
       const bus = { ...v }
       snapBus(bus)
       const marker = L.marker([bus.lat, bus.lon], { icon: pinIcon(L, bus), keyboard: false })
-        .addTo(map)
         .on('click', (e) => {
           L.DomEvent.stopPropagation(e)
           const live = fleet.get(v.id)
           if (live) selectBus(live)
         })
+      if (matchesFilter(bus)) marker.addTo(map)
       fleet.set(v.id, { ...bus, marker })
     }
   }
@@ -124,6 +211,8 @@ function applySnapshot(L, map, incoming) {
     fleet.delete(id)
     if (selected.value?.id === id) selected.value = null
   }
+  refreshRoutes()
+  syncFilter()
 }
 
 let poll
@@ -214,6 +303,92 @@ body,
 }
 .wrap {
   position: relative;
+}
+
+.toolbar {
+  position: absolute;
+  top: 12px;
+  left: 56px;
+  z-index: 1100;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100% - 68px);
+  font-family: system-ui, sans-serif;
+}
+.search {
+  position: relative;
+}
+.search input {
+  width: 160px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  font: 600 13px/1 system-ui, sans-serif;
+  color: #1a1d21;
+}
+.search input:focus {
+  outline: 2px solid #4dabf7;
+}
+.suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  max-height: 240px;
+  overflow: auto;
+}
+.suggest button {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  font: 600 13px/1 system-ui, sans-serif;
+  color: #1a1d21;
+  cursor: pointer;
+}
+.suggest button:hover {
+  background: #f1f3f5;
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 2px;
+}
+.route-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 6px 0 10px;
+  border-radius: 999px;
+  background: #1a1d21;
+  color: #fff;
+  font: 700 12px/1 system-ui, sans-serif;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+.route-pill button {
+  border: 0;
+  background: none;
+  color: #adb5bd;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
 }
 
 .bus-pin-wrap {
