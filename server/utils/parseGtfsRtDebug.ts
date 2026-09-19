@@ -57,12 +57,13 @@ export function parseGtfsRtDebug(text: string): Vehicle[] {
   const vehicles: Vehicle[] = []
   for (const entity of blocksNamed(text, 'entity')) {
     const id = lastQuotedId(entity)
+    const routeId = str(entity, 'route_id')
     const lat = num(entity, 'latitude')
     const lon = num(entity, 'longitude')
-    if (!id || lat == null || lon == null) continue
+    if (!id || !routeId || lat == null || lon == null) continue
     vehicles.push({
       id,
-      routeId: str(entity, 'route_id') ?? '',
+      routeId,
       lat,
       lon,
       bearing: num(entity, 'bearing') ?? 0,

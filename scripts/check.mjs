@@ -33,6 +33,18 @@ entity {
  trip { route_id: "96" }
  }
 }
+entity {
+ id: "3"
+ vehicle {
+ position {
+ latitude: 43.65
+ longitude: -79.38
+ }
+ vehicle {
+ id: "9999"
+ }
+ }
+}
 `
 
 const vehicles = parseGtfsRtDebug(sample)
