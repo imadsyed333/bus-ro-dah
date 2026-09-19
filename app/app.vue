@@ -28,20 +28,30 @@ function snapBus(bus) {
   bus.bearing = s.bearing
 }
 
+function retarget(bus, lat, lon, bearing) {
+  bus.fromLat = bus.lat
+  bus.fromLon = bus.lon
+  bus.lat = lat
+  bus.lon = lon
+  bus.bearing = bearing
+  snapBus(bus)
+  bus.toLat = bus.lat
+  bus.toLon = bus.lon
+  bus.lat = bus.fromLat
+  bus.lon = bus.fromLon
+  bus.lerp = 0
+}
+
 function applySnapshot(L, map, incoming) {
   const seen = new Set()
   for (const v of incoming) {
     seen.add(v.id)
     const rec = fleet.get(v.id)
     if (rec) {
-      rec.lat = v.lat
-      rec.lon = v.lon
-      rec.bearing = v.bearing
       rec.speed = v.speed
       rec.routeId = v.routeId
       rec.occupancy = v.occupancy
-      snapBus(rec)
-      rec.marker.setLatLng([rec.lat, rec.lon])
+      retarget(rec, v.lat, v.lon, v.bearing)
       rec.marker.setTooltipContent(tooltipHtml(v))
     } else {
       const bus = { ...v }
@@ -92,8 +102,7 @@ onMounted(async () => {
       }).addTo(map)
       snapIndex = indexCentreline(roads)
       for (const bus of fleet.values()) {
-        snapBus(bus)
-        bus.marker.setLatLng([bus.lat, bus.lon])
+        retarget(bus, bus.lat, bus.lon, bus.bearing)
       }
     } catch {
       // keep free-plane motion until centreline is available
@@ -109,11 +118,19 @@ onMounted(async () => {
     const dt = (now - last) / 1000
     last = now
     for (const bus of fleet.values()) {
-      if (bus.speed <= 0) continue
-      const next = offset(bus.lat, bus.lon, bus.bearing, bus.speed * dt)
-      bus.lat = next.lat
-      bus.lon = next.lon
-      snapBus(bus)
+      if (bus.lerp != null && bus.lerp < 1) {
+        bus.lerp = Math.min(1, bus.lerp + dt / 1)
+        const t = bus.lerp
+        bus.lat = bus.fromLat + (bus.toLat - bus.fromLat) * t
+        bus.lon = bus.fromLon + (bus.toLon - bus.fromLon) * t
+      } else if (bus.speed > 0) {
+        const next = offset(bus.lat, bus.lon, bus.bearing, bus.speed * dt)
+        bus.lat = next.lat
+        bus.lon = next.lon
+        snapBus(bus)
+      } else {
+        continue
+      }
       bus.marker.setLatLng([bus.lat, bus.lon])
     }
   }, 100)
