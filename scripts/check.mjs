@@ -48,7 +48,8 @@ entity {
 }
 `
 
-const vehicles = parseGtfsRtDebug(sample)
+const { vehicles, timestamp } = parseGtfsRtDebug(sample)
+assert.equal(timestamp, 1)
 assert.equal(vehicles.length, 1)
 assert.deepEqual(vehicles[0], {
   id: '3640',

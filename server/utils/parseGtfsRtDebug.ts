@@ -53,7 +53,12 @@ function lastQuotedId(block: string): string | undefined {
   return id
 }
 
-export function parseGtfsRtDebug(text: string): Vehicle[] {
+export type GtfsRtFeed = {
+  vehicles: Vehicle[]
+  timestamp?: number
+}
+
+export function parseGtfsRtDebug(text: string): GtfsRtFeed {
   const vehicles: Vehicle[] = []
   for (const entity of blocksNamed(text, 'entity')) {
     const id = lastQuotedId(entity)
@@ -71,5 +76,6 @@ export function parseGtfsRtDebug(text: string): Vehicle[] {
       occupancy: entity.match(/occupancy_status:\s*(\w+)/)?.[1] ?? '',
     })
   }
-  return vehicles
+  const header = blocksNamed(text, 'header')[0]
+  return { vehicles, timestamp: header ? num(header, 'timestamp') : undefined }
 }

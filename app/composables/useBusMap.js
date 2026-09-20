@@ -14,6 +14,8 @@ export function useBusMap(mapEl) {
   let poll
   let move
   let map
+  let lastFeedTs
+  let onVis
 
   function matchesFilter(bus) {
     if (selectedRoutes.value.length && !selectedRoutes.value.includes(bus.routeId)) return false
@@ -175,8 +177,11 @@ export function useBusMap(mapEl) {
     map.getPane('centreline').style.zIndex = 250
 
     async function load() {
+      if (document.hidden) return
       try {
         const data = await $fetch('/api/vehicles')
+        if (typeof data.timestamp === 'number' && data.timestamp === lastFeedTs) return
+        if (typeof data.timestamp === 'number') lastFeedTs = data.timestamp
         applySnapshot(L, map, data.vehicles)
       } catch {
         // keep last positions moving
@@ -202,7 +207,9 @@ export function useBusMap(mapEl) {
 
     await load()
     loadCentreline()
-    poll = setInterval(load, 60_000)
+    onVis = () => { if (!document.hidden) load() }
+    document.addEventListener('visibilitychange', onVis)
+    poll = setInterval(load, 15_000)
     let last = performance.now()
     move = setInterval(() => {
       const now = performance.now()
@@ -229,6 +236,7 @@ export function useBusMap(mapEl) {
   })
 
   onUnmounted(() => {
+    if (onVis) document.removeEventListener('visibilitychange', onVis)
     clearInterval(poll)
     clearInterval(move)
     map?.remove()
