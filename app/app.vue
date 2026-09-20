@@ -11,6 +11,7 @@
       @add-exact="addExact"
       @remove="removeRoute"
     />
+    <UpdateCountdown :seconds="nextUpdateIn" />
     <BusCard v-if="selected" :bus="selected" @close="selected = null" />
   </div>
 </template>
@@ -29,6 +30,7 @@ const {
   addRoute,
   addExact,
   removeRoute,
+  nextUpdateIn,
 } = useBusMap(mapEl)
 </script>
 

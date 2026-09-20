@@ -64,7 +64,7 @@ const emit = defineEmits(['add', 'addExact', 'remove'])
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 8px;
-  max-width: calc(100% - 68px);
+  max-width: calc(100% - 180px);
   font-family: system-ui, sans-serif;
 }
 .filters {

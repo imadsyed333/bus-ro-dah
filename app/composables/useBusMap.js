@@ -2,6 +2,8 @@ import { offset } from '~/utils/deadReckon'
 import { indexCentreline, snap } from '~/utils/snapToLine'
 import { BUS_SVG, occupancyBucket, occupancyColor } from '~/utils/occupancy'
 
+const POLL_MS = 15_000
+
 export function useBusMap(mapEl) {
   const selected = ref(null)
   const query = ref('')
@@ -9,13 +11,25 @@ export function useBusMap(mapEl) {
   const selectedOccupancy = ref([])
   const selectedMotion = ref([])
   const knownRoutes = ref([])
+  const nextUpdateIn = ref(POLL_MS / 1000)
   const fleet = new Map()
   let snapIndex = null
   let poll
   let move
+  let countdown
+  let nextPollAt = 0
   let map
   let lastFeedTs
   let onVis
+
+  function remaining() {
+    return Math.max(0, Math.ceil((nextPollAt - Date.now()) / 1000))
+  }
+
+  function armPollClock() {
+    nextPollAt = Date.now() + POLL_MS
+    nextUpdateIn.value = remaining()
+  }
 
   function matchesFilter(bus) {
     if (selectedRoutes.value.length && !selectedRoutes.value.includes(bus.routeId)) return false
@@ -178,6 +192,7 @@ export function useBusMap(mapEl) {
 
     async function load() {
       if (document.hidden) return
+      armPollClock()
       try {
         const data = await $fetch('/api/vehicles')
         if (typeof data.timestamp === 'number' && data.timestamp === lastFeedTs) return
@@ -206,10 +221,12 @@ export function useBusMap(mapEl) {
     }
 
     await load()
+    armPollClock()
     loadCentreline()
     onVis = () => { if (!document.hidden) load() }
     document.addEventListener('visibilitychange', onVis)
-    poll = setInterval(load, 15_000)
+    poll = setInterval(load, POLL_MS)
+    countdown = setInterval(() => { nextUpdateIn.value = remaining() }, 1000)
     let last = performance.now()
     move = setInterval(() => {
       const now = performance.now()
@@ -239,6 +256,7 @@ export function useBusMap(mapEl) {
     if (onVis) document.removeEventListener('visibilitychange', onVis)
     clearInterval(poll)
     clearInterval(move)
+    clearInterval(countdown)
     map?.remove()
   })
 
@@ -252,5 +270,6 @@ export function useBusMap(mapEl) {
     addRoute,
     addExact,
     removeRoute,
+    nextUpdateIn,
   }
 }
