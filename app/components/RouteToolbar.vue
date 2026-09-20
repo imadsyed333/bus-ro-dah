@@ -21,23 +21,26 @@
         <button type="button" :aria-label="`Remove route ${id}`" @click="emit('remove', id)">×</button>
       </span>
     </div>
-    <div class="filters">
-      <fieldset>
-        <legend>Occupancy</legend>
-        <label v-for="opt in occupancyOpts" :key="opt.id">
-          <input type="checkbox" :value="opt.id" v-model="occupancy">
-          <i :style="{ background: opt.color }" />
-          {{ opt.label }}
-        </label>
-      </fieldset>
-      <fieldset>
-        <legend>Status</legend>
-        <label v-for="opt in motionOpts" :key="opt.id">
-          <input type="checkbox" :value="opt.id" v-model="motion">
-          {{ opt.label }}
-        </label>
-      </fieldset>
-    </div>
+    <details class="filters">
+      <summary>Filters</summary>
+      <div class="filters-body">
+        <fieldset>
+          <legend>Occupancy</legend>
+          <label v-for="opt in occupancyOpts" :key="opt.id">
+            <input type="checkbox" :value="opt.id" v-model="occupancy">
+            <i :style="{ background: opt.color }" />
+            {{ opt.label }}
+          </label>
+        </fieldset>
+        <fieldset>
+          <legend>Status</legend>
+          <label v-for="opt in motionOpts" :key="opt.id">
+            <input type="checkbox" :value="opt.id" v-model="motion">
+            {{ opt.label }}
+          </label>
+        </fieldset>
+      </div>
+    </details>
   </div>
 </template>
 
@@ -68,13 +71,44 @@ const emit = defineEmits(['add', 'addExact', 'remove'])
   font-family: system-ui, sans-serif;
 }
 .filters {
-  display: flex;
-  gap: 16px;
   flex-basis: 100%;
   padding: 10px 12px;
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+}
+.filters summary {
+  list-style: none;
+  cursor: pointer;
+  font: 700 12px/1 system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1a1d21;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filters summary::-webkit-details-marker {
+  display: none;
+}
+.filters summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid #868e96;
+}
+.filters[open] summary::before {
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid #868e96;
+  border-bottom: 0;
+}
+.filters-body {
+  display: flex;
+  gap: 16px;
+  padding-top: 10px;
 }
 .filters fieldset {
   margin: 0;
@@ -218,6 +252,10 @@ const emit = defineEmits(['add', 'addExact', 'remove'])
   .route-pill button {
     font-size: 22px;
     padding: 4px 8px;
+  }
+  .filters summary {
+    min-height: 44px;
+    font-size: 13px;
   }
   .filters legend {
     font-size: 13px;
