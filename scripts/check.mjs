@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { parseGtfsRtDebug } from '../server/utils/parseGtfsRtDebug.ts'
 import { offset } from '../app/utils/deadReckon.ts'
 import { indexCentreline, snap } from '../app/utils/snapToLine.ts'
+import { occupancyColor, occupancyBucket, occupancyLabel } from '../app/utils/occupancy.ts'
 
 const sample = `
 header {
@@ -77,5 +78,16 @@ assert.ok(Math.abs(on.lat - 43.0005) < 1e-6, `snap lat ${on.lat}`)
 const far = snap(idx, 43.5, -79.5, 0)
 assert.equal(far.lat, 43.5)
 assert.equal(far.lon, -79.5)
+
+assert.equal(occupancyColor('EMPTY'), occupancyColor('MANY_SEATS_AVAILABLE'))
+assert.equal(occupancyColor('FEW_SEATS_AVAILABLE'), '#f08c00')
+assert.equal(occupancyColor('FULL'), '#e03131')
+assert.equal(occupancyColor(), '#495057')
+assert.equal(occupancyBucket('EMPTY'), 'available')
+assert.equal(occupancyBucket('STANDING_ROOM_ONLY'), 'crowded')
+assert.equal(occupancyBucket('CRUSHED_STANDING_ROOM_ONLY'), 'crowded')
+assert.equal(occupancyBucket(), '')
+assert.equal(occupancyLabel('FEW_SEATS_AVAILABLE'), 'Few Seats Available')
+assert.equal(occupancyLabel(), 'Unknown')
 
 console.log('ok')
