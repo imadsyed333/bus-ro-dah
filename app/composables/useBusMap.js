@@ -19,6 +19,7 @@ export function useBusMap(mapEl) {
   let countdown
   let nextPollAt = 0
   let map
+  let L
   let lastFeedTs
   let onVis
 
@@ -103,14 +104,26 @@ export function useBusMap(mapEl) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
   }
 
-  function pinIcon(L, bus) {
+  function pinIcon(bus) {
+    const on = selected.value?.id === bus.id
     return L.divIcon({
-      className: 'bus-pin-wrap',
+      className: on ? 'bus-pin-wrap is-selected' : 'bus-pin-wrap',
       iconSize: [52, 26],
       iconAnchor: [26, 26],
-      html: `<span class="bus-pin" style="background:${occupancyColor(bus.occupancy)}">${BUS_SVG}<b>${esc(bus.routeId || '—')}</b></span>`,
+      html: `<span class="bus-pin${on ? ' is-selected' : ''}" style="background:${occupancyColor(bus.occupancy)}">${BUS_SVG}<b>${esc(bus.routeId || '—')}</b></span>`,
     })
   }
+
+  function restylePin(bus) {
+    if (!L || !bus?.marker) return
+    bus.marker.setIcon(pinIcon(bus))
+    bus.marker.setZIndexOffset(selected.value?.id === bus.id ? 10000 : 0)
+  }
+
+  watch(() => selected.value?.id, (id, prev) => {
+    if (prev) restylePin(fleet.get(prev))
+    if (id) restylePin(fleet.get(id))
+  })
 
   function followCenter(lat, lon, z = map.getZoom()) {
     const pad = (document.querySelector('.dock')?.getBoundingClientRect().height || 0) / 2
@@ -164,12 +177,12 @@ export function useBusMap(mapEl) {
         rec.routeId = v.routeId
         rec.occupancy = v.occupancy
         retarget(rec, v.lat, v.lon, v.bearing)
-        rec.marker.setIcon(pinIcon(L, rec))
+        rec.marker.setIcon(pinIcon(rec))
         if (selected.value?.id === rec.id) selectBus(rec)
       } else {
         const bus = { ...v }
         snapBus(bus)
-        const marker = L.marker([bus.lat, bus.lon], { icon: pinIcon(L, bus), keyboard: false })
+        const marker = L.marker([bus.lat, bus.lon], { icon: pinIcon(bus), keyboard: false })
           .on('click', (e) => {
             L.DomEvent.stopPropagation(e)
             const live = fleet.get(v.id)
@@ -191,7 +204,7 @@ export function useBusMap(mapEl) {
 
   onMounted(async () => {
     const leaflet = await import('leaflet')
-    const L = leaflet.default ?? leaflet
+    L = leaflet.default ?? leaflet
     map = L.map(mapEl.value, { preferCanvas: true }).setView([43.6532, -79.3832], 12)
     L.tileLayer(
       'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',

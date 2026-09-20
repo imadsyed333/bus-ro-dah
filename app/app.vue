@@ -75,6 +75,11 @@ body,
 .bus-pin b {
   font: inherit;
 }
+.bus-pin.is-selected {
+  transform: scale(1.25);
+  transform-origin: 50% 100%;
+  box-shadow: 0 0 0 2px #fff, 0 3px 10px rgba(0, 0, 0, 0.4);
+}
 .dock {
   display: contents;
 }
