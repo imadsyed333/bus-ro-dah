@@ -177,4 +177,54 @@ const emit = defineEmits(['add', 'addExact', 'remove'])
   cursor: pointer;
   padding: 0 2px;
 }
+@media (max-width: 768px) {
+  .toolbar {
+    position: relative;
+    top: auto;
+    left: auto;
+    max-width: none;
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .search,
+  .search input,
+  .filters {
+    width: 100%;
+    flex-basis: auto;
+    box-sizing: border-box;
+  }
+  .search input {
+    height: 44px;
+    font-size: 16px;
+  }
+  .suggest {
+    top: auto;
+    bottom: calc(100% + 4px);
+    z-index: 2;
+  }
+  .suggest button {
+    padding: 12px;
+    font-size: 16px;
+  }
+  .pills {
+    gap: 8px;
+  }
+  .route-pill {
+    height: 40px;
+    padding: 0 8px 0 14px;
+    font-size: 15px;
+  }
+  .route-pill button {
+    font-size: 22px;
+    padding: 4px 8px;
+  }
+  .filters legend {
+    font-size: 13px;
+  }
+  .filters label {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
 </style>

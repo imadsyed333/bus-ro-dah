@@ -105,4 +105,40 @@ const emit = defineEmits(['close'])
   background: #fff3bf;
   color: #e67700;
 }
+@media (max-width: 768px) {
+  .card {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 20px 20px 18px;
+  }
+  .card-close {
+    top: 10px;
+    right: 12px;
+    font-size: 28px;
+    padding: 4px 8px;
+  }
+  .card-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  .card-route {
+    font-size: 28px;
+  }
+  .card-speed {
+    font-size: 40px;
+  }
+  .card-speed small {
+    font-size: 16px;
+  }
+  .card-row {
+    font-size: 16px;
+  }
+  .chip {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
 </style>

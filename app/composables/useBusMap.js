@@ -112,10 +112,24 @@ export function useBusMap(mapEl) {
     })
   }
 
+  function followCenter(lat, lon, z = map.getZoom()) {
+    const pad = (document.querySelector('.dock')?.getBoundingClientRect().height || 0) / 2
+    if (!pad) return [lat, lon]
+    const p = map.project([lat, lon], z)
+    p.y += pad
+    const ll = map.unproject(p, z)
+    return [ll.lat, ll.lng]
+  }
+
   function selectBus(bus) {
     const switched = selected.value?.id !== bus.id
     selected.value = { id: bus.id, routeId: bus.routeId, speed: bus.speed, occupancy: bus.occupancy }
-    if (switched && map) map.setView([bus.lat, bus.lon], Math.max(map.getZoom(), 16))
+    if (switched && map) {
+      nextTick(() => {
+        const zoom = Math.max(map.getZoom(), 16)
+        map.setView(followCenter(bus.lat, bus.lon, zoom), zoom)
+      })
+    }
   }
 
   function snapBus(bus) {
@@ -247,7 +261,7 @@ export function useBusMap(mapEl) {
           continue
         }
         bus.marker.setLatLng([bus.lat, bus.lon])
-        if (selected.value?.id === bus.id) map.panTo([bus.lat, bus.lon], { animate: false })
+        if (selected.value?.id === bus.id) map.panTo(followCenter(bus.lat, bus.lon), { animate: false })
       }
     }, 100)
   })

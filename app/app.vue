@@ -1,18 +1,20 @@
 <template>
   <div class="wrap">
     <div ref="mapEl" class="map" />
-    <RouteToolbar
-      v-model:query="query"
-      v-model:routes="selectedRoutes"
-      v-model:occupancy="selectedOccupancy"
-      v-model:motion="selectedMotion"
-      :suggestions="suggestions"
-      @add="addRoute"
-      @add-exact="addExact"
-      @remove="removeRoute"
-    />
     <UpdateCountdown :seconds="nextUpdateIn" />
-    <BusCard v-if="selected" :bus="selected" @close="selected = null" />
+    <div class="dock">
+      <BusCard v-if="selected" :bus="selected" @close="selected = null" />
+      <RouteToolbar
+        v-model:query="query"
+        v-model:routes="selectedRoutes"
+        v-model:occupancy="selectedOccupancy"
+        v-model:motion="selectedMotion"
+        :suggestions="suggestions"
+        @add="addRoute"
+        @add-exact="addExact"
+        @remove="removeRoute"
+      />
+    </div>
   </div>
 </template>
 
@@ -72,5 +74,26 @@ body,
 }
 .bus-pin b {
   font: inherit;
+}
+.dock {
+  display: contents;
+}
+@media (max-width: 768px) {
+  .leaflet-control-zoom {
+    display: none;
+  }
+  .dock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+    width: 100%;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
 }
 </style>
