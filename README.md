@@ -1,75 +1,7 @@
-# Nuxt Minimal Starter
+# Transitarium
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Transitarium is a web app displaying the entire TTC bus network live (ish). Uses TTC's live vehicle position feed: (https://bustime.ttc.ca/gtfsrt/vehicles?debug)[https://bustime.ttc.ca/gtfsrt/vehicles?debug]. Built using Nuxt and Leaflet.
 
-## Setup
+There are probably similar, more useful apps out there. I just haven't come across an app that displays the buses like ants in an ant farm. Much better to stare at bus
 
-Make sure to install dependencies:
-
-```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+<img width="1917" height="998" alt="image" src="https://github.com/user-attachments/assets/4ffdba01-2c52-40db-bc0e-10d955aa5594" />
